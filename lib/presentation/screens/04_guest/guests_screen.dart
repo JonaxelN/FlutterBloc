@@ -1,5 +1,7 @@
+import 'package:blocs_app/config/config.dart';
+import 'package:blocs_app/presentation/blocs/04-guests_bloc/guests_bloc.dart';
 import 'package:flutter/material.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GuestsScreen extends StatelessWidget {
   const GuestsScreen({super.key});
@@ -12,19 +14,21 @@ class GuestsScreen extends StatelessWidget {
       ),
       body: const _TodoView(),
       floatingActionButton: FloatingActionButton(
-        child: const Icon( Icons.add ),
-        onPressed: () {},
+        child: const Icon(Icons.add),
+        onPressed: () {
+          context.read<GuestsBloc>().addGuest(RandomGenerator.getRandomName());
+        },
       ),
     );
   }
 }
-
 
 class _TodoView extends StatelessWidget {
   const _TodoView();
 
   @override
   Widget build(BuildContext context) {
+    final guestsBloc = context.watch<GuestsBloc>();
     return Column(
       children: [
         const ListTile(
@@ -33,27 +37,33 @@ class _TodoView extends StatelessWidget {
         ),
 
         SegmentedButton(
-          segments: const[
-            ButtonSegment(value: 'all', icon: Text('Todos')),
-            ButtonSegment(value: 'completed', icon: Text('Invitados')),
-            ButtonSegment(value: 'pending', icon: Text('No invitados')),
-          ], 
-          selected: const <String>{ 'all' },
-          onSelectionChanged: (value) {
-            
-          },
-        ),
-        const SizedBox( height: 5 ),
+            segments: const [
+              ButtonSegment(value: GuestFilter.all, icon: Text('Todos')),
+              ButtonSegment(
+                  value: GuestFilter.invited, icon: Text('Invitados')),
+              ButtonSegment(
+                  value: GuestFilter.noInvited, icon: Text('No invitados')),
+            ],
+            selected: <GuestFilter>{
+              guestsBloc.state.filter
+            },
+            onSelectionChanged: (value) {
+              guestsBloc.changeFilter(value.first);
+            }),
+        const SizedBox(height: 5),
 
         /// Listado de personas a invitar
         Expanded(
           child: ListView.builder(
+            itemCount: guestsBloc.state.howManyFiltered,
             itemBuilder: (context, index) {
+              final guest = guestsBloc.state.filteredGuests[index];
               return SwitchListTile(
-                title: const Text('Juan carlos'),
-                value: true, 
-                onChanged: ( value ) {}
-              );
+                  title: Text(guest.description),
+                  value: guest.done,
+                  onChanged: (value) {
+                    context.read<GuestsBloc>().toggle(guest.id, value);
+                  });
             },
           ),
         )
